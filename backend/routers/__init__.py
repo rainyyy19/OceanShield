@@ -1,0 +1,26 @@
+try:
+    from routers.vessels import router as vessels_router
+    from routers.anomalies import router as anomalies_router
+    from routers.spoofing import router as spoofing_router
+    from routers.investigations import router as investigations_router
+    from routers.heatmap import router as heatmap_router
+    from routers.ais import router as ais_router
+    from routers.stats import router as stats_router
+except ImportError:
+    from backend.routers.vessels import router as vessels_router
+    from backend.routers.anomalies import router as anomalies_router
+    from backend.routers.spoofing import router as spoofing_router
+    from backend.routers.investigations import router as investigations_router
+    from backend.routers.heatmap import router as heatmap_router
+    from backend.routers.ais import router as ais_router
+    from backend.routers.stats import router as stats_router
+
+__all__ = [
+    "vessels_router",
+    "anomalies_router",
+    "spoofing_router",
+    "investigations_router",
+    "heatmap_router",
+    "ais_router",
+    "stats_router",
+]
