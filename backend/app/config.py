@@ -7,7 +7,9 @@ PROJECT_ROOT = BACKEND_DIR.parent
 
 # Default Data Paths
 DEFAULT_AIS_CSV_PATH = str(BACKEND_DIR / "data" / "ais_telemetry.csv")
-FRONTEND_VESSELS_JSON_PATH = str(PROJECT_ROOT / "data" / "vessels.json")
+FRONTEND_VESSELS_JSON_PATH = str(PROJECT_ROOT / "frontend" / "data" / "vessels.json")
+if not os.path.exists(FRONTEND_VESSELS_JSON_PATH):
+    FRONTEND_VESSELS_JSON_PATH = str(PROJECT_ROOT / "data" / "vessels.json")
 
 # CORS Configuration
 CORS_ORIGINS = [

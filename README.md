@@ -54,14 +54,30 @@ Designed with a high-contrast **arctic cyber / tech-savvy lighter theme**, pearl
   7. **AI Anomaly Models (`rules`)**: Deep learning classifiers with interactive parameter tuning sliders.
   8. **Telemetry & Forensics (`logs`)**: Live raw `!AIVDM` NMEA sentence stream terminal.
 
----
+## 📂 Repository Structure
 
-## 🛠️ Tech Stack
-
-* **Frontend**: Next.js 15 (App Router), React 19, TypeScript, Tailwind CSS, Lucide Icons.
-* **Mapping**: Leaflet, OpenStreetMap, CartoDB Positron, Esri Satellite.
-* **Backend**: Next.js App Router dynamic API routes + FastAPI Python backend.
-* **Data**: AIS CSV telemetry dataset (`data/ais_telemetry.csv`), `data/vessels.json`.
+```
+OceanShield/
+├── frontend/                 # Next.js 15 C2 Operations Dashboard & Tactical Maps
+│   ├── app/                  # App Router & API routes
+│   ├── components/           # React 19 UI & Tactical Leaflet Components
+│   ├── data/                 # AIS telemetry & forensic JSON data
+│   ├── lib/                  # Dataset parser & kinematic utilities
+│   ├── types/                # Vessel & threat TypeScript interfaces
+│   └── package.json          # Frontend dependencies
+├── backend/                  # FastAPI Maritime Threat Intelligence Backend
+│   ├── api/                  # API router aggregation
+│   ├── routers/              # Endpoints: vessels, anomalies, spoofing, heatmap, ais
+│   ├── services/             # Kinematics engine, anomaly detection, confidence scoring
+│   ├── models/               # Domain models
+│   ├── schemas/              # Pydantic v2 schemas
+│   ├── data/                 # Ingested AIS time-series CSV
+│   ├── tests/                # Automated pytest test suite (27 passing tests)
+│   └── requirements.txt      # Python backend dependencies
+├── data/                     # Root AIS CSV and forensic JSON telemetry
+├── ARCHITECTURE.md           # End-to-end system architecture & kinematics equations
+└── README.md                 # Project documentation
+```
 
 ---
 

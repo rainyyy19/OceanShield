@@ -2,8 +2,18 @@ import fs from "fs";
 import path from "path";
 import { Vessel, VesselTrackPoint, VesselTrackResponse, RiskLevel } from "@/types/vessel";
 
-const CSV_PATH = path.join(process.cwd(), "data", "ais_telemetry.csv");
-const VESSELS_JSON_PATH = path.join(process.cwd(), "data", "vessels.json");
+const resolveDataPath = (filename: string): string => {
+  const p1 = path.join(process.cwd(), "data", filename);
+  if (fs.existsSync(p1)) return p1;
+  const p2 = path.join(process.cwd(), "frontend", "data", filename);
+  if (fs.existsSync(p2)) return p2;
+  const p3 = path.join(process.cwd(), "..", "data", filename);
+  if (fs.existsSync(p3)) return p3;
+  return p1;
+};
+
+const CSV_PATH = resolveDataPath("ais_telemetry.csv");
+const VESSELS_JSON_PATH = resolveDataPath("vessels.json");
 
 interface CsvRow {
   timestamp: string;
