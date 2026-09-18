@@ -68,3 +68,77 @@ export interface VesselTrackResponse {
   spoofed_track: [number, number][];  // [lat, lng]
 }
 
+export interface FleetOverviewStats {
+  total_ships_count: number;
+  active_threats_count: number;
+  fleet_risk_score: number;
+  incidents_today_count: number;
+  high_risk_count: number;
+  medium_risk_count: number;
+  safe_count: number;
+  timestamp: string;
+}
+
+export interface BackendHealth {
+  status: string;
+  version: string;
+  ais_records_loaded: number;
+  vessels_tracked: number;
+  active_threats: number;
+}
+
+export interface SpoofingFactorBreakdown {
+  kinematicJumpScore: number;
+  syntheticDriftScore: number;
+  rfCarrierDropScore: number;
+  transponderBlankingScore: number;
+  altitudeAnomalyScore: number;
+  identityCloneScore: number;
+}
+
+export interface SpoofingConfidenceResponse {
+  vesselId: string;
+  vesselName: string;
+  mmsi: number;
+  confidence: number;
+  riskLevel: RiskLevel;
+  primaryVector: string;
+  factors: SpoofingFactorBreakdown;
+  rationale: string;
+}
+
+export interface HeatmapRegion {
+  id: string;
+  name: string;
+  coordinates: string;
+  lat: number;
+  lng: number;
+  zoom: number;
+  riskLevel: "CRITICAL" | "HIGH" | "ELEVATED" | "MODERATE" | "LOW";
+  riskScore: number;
+  activeThreats: string;
+  vesselsInZone: number;
+  geofenceStatus: string;
+  bufferRadius: string;
+  description: string;
+}
+
+export interface HeatmapPoint {
+  lat: number;
+  lng: number;
+  intensity: number;
+}
+
+export interface HeatmapResponse {
+  totalRegions: number;
+  regions: HeatmapRegion[];
+  points: HeatmapPoint[];
+}
+
+export interface AisStatusResponse {
+  status: string;
+  last_source: string;
+  total_records_ingested: number;
+  vessels_tracked: number;
+}
+

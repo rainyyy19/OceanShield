@@ -22,7 +22,8 @@ import {
   Camera,
   Maximize2
 } from "lucide-react";
-import { Vessel } from "@/types/vessel";
+import { Vessel, SpoofingConfidenceResponse, InvestigationTimelineItem } from "@/types/vessel";
+import { getSpoofingConfidence, getVesselTimeline } from "@/lib/api";
 
 interface InvestigationDrawerProps {
   vessel: Vessel | null;
@@ -37,6 +38,9 @@ export default function InvestigationDrawer({
   onClose,
   onLocateOnMap,
 }: InvestigationDrawerProps) {
+  const [liveConfidence, setLiveConfidence] = React.useState<SpoofingConfidenceResponse | null>(null);
+  const [liveTimeline, setLiveTimeline] = React.useState<InvestigationTimelineItem[] | null>(null);
+
   // Close on Escape key press
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -48,14 +52,47 @@ export default function InvestigationDrawer({
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, [isOpen, onClose]);
 
+  // Fetch live spoofing confidence breakdown & timeline from FastAPI backend
+  useEffect(() => {
+    if (!vessel || !isOpen) {
+      setLiveConfidence(null);
+      setLiveTimeline(null);
+      return;
+    }
+
+    let isMounted = true;
+    const fetchDossierData = async () => {
+      const idOrMmsi = vessel.mmsi || vessel.id;
+      const [conf, timeRes] = await Promise.all([
+        getSpoofingConfidence(idOrMmsi),
+        getVesselTimeline(idOrMmsi),
+      ]);
+
+      if (isMounted) {
+        if (conf) setLiveConfidence(conf);
+        if (timeRes?.timeline && timeRes.timeline.length > 0) {
+          setLiveTimeline(timeRes.timeline);
+        }
+      }
+    };
+
+    fetchDossierData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [vessel, isOpen]);
+
   if (!isOpen || !vessel) return null;
 
   const isHighRisk = vessel.risk === "High";
   const isMedRisk = vessel.risk === "Medium";
   const isSafe = vessel.risk === "Safe";
 
-  // Confidence calculations for SVG circular gauge
-  const confidence = vessel.spoofingConfidence || (isHighRisk ? 94.5 : isMedRisk ? 65.0 : 1.5);
+  // Confidence calculations for SVG circular gauge (uses live backend confidence if available)
+  const confidence = liveConfidence
+    ? liveConfidence.confidence
+    : vessel.spoofingConfidence || (isHighRisk ? 94.5 : isMedRisk ? 65.0 : 1.5);
   const radius = 42;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (confidence / 100) * circumference;
@@ -294,6 +331,59 @@ export default function InvestigationDrawer({
               </div>
             </div>
 
+            {/* 4b. 6-Factor Spoofing Vector Breakdown from Backend */}
+            {liveConfidence?.factors && (
+              <div className="rounded-2xl p-4 glass-card border border-cyan-500/25 shadow-sm bg-white/90">
+                <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-cyan-500/20">
+                  <span className="text-[11px] font-mono font-bold uppercase text-cyan-900 flex items-center gap-1.5">
+                    <Activity className="w-3.5 h-3.5 text-cyan-700" />
+                    6-Factor Spoofing Analysis (FastAPI Engine)
+                  </span>
+                  <span className="text-[10px] font-mono text-slate-500 font-semibold">
+                    Vector: {liveConfidence.primaryVector}
+                  </span>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[10px] font-mono">
+                  <div className="p-2 rounded-lg bg-slate-50 border border-slate-200">
+                    <span className="text-slate-500 block">Kinematic Jump</span>
+                    <span className={`font-bold ${liveConfidence.factors.kinematicJumpScore > 50 ? "text-red-600" : "text-slate-800"}`}>
+                      {liveConfidence.factors.kinematicJumpScore}%
+                    </span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-slate-50 border border-slate-200">
+                    <span className="text-slate-500 block">Synthetic Drift</span>
+                    <span className={`font-bold ${liveConfidence.factors.syntheticDriftScore > 50 ? "text-red-600" : "text-slate-800"}`}>
+                      {liveConfidence.factors.syntheticDriftScore}%
+                    </span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-slate-50 border border-slate-200">
+                    <span className="text-slate-500 block">RF C/N0 Drop</span>
+                    <span className={`font-bold ${liveConfidence.factors.rfCarrierDropScore > 50 ? "text-red-600" : "text-slate-800"}`}>
+                      {liveConfidence.factors.rfCarrierDropScore}%
+                    </span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-slate-50 border border-slate-200">
+                    <span className="text-slate-500 block">Transponder Blanking</span>
+                    <span className={`font-bold ${liveConfidence.factors.transponderBlankingScore > 50 ? "text-red-600" : "text-slate-800"}`}>
+                      {liveConfidence.factors.transponderBlankingScore}%
+                    </span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-slate-50 border border-slate-200">
+                    <span className="text-slate-500 block">Altitude Spike (VDOP)</span>
+                    <span className={`font-bold ${liveConfidence.factors.altitudeAnomalyScore > 50 ? "text-red-600" : "text-slate-800"}`}>
+                      {liveConfidence.factors.altitudeAnomalyScore}%
+                    </span>
+                  </div>
+                  <div className="p-2 rounded-lg bg-slate-50 border border-slate-200">
+                    <span className="text-slate-500 block">Identity Clone</span>
+                    <span className={`font-bold ${liveConfidence.factors.identityCloneScore > 50 ? "text-red-600" : "text-slate-800"}`}>
+                      {liveConfidence.factors.identityCloneScore}%
+                    </span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* 5. Vessel Information Grid */}
             <div className="rounded-2xl glass-card border border-cyan-500/25 p-4 shadow-sm bg-white/90">
               <h3 className="text-xs font-mono font-bold uppercase tracking-wider text-cyan-900 pb-2.5 mb-3 border-b border-cyan-500/20 flex items-center gap-2">
@@ -374,13 +464,13 @@ export default function InvestigationDrawer({
                   Investigation Timeline & Audit Trail
                 </h3>
                 <span className="text-[10px] font-mono text-slate-500">
-                  {vessel.timeline ? `${vessel.timeline.length} Events` : "Chronological"}
+                  {(liveTimeline || vessel.timeline) ? `${(liveTimeline || vessel.timeline)!.length} Events` : "Chronological"}
                 </span>
               </div>
 
               <div className="space-y-3">
-                {vessel.timeline && vessel.timeline.length > 0 ? (
-                  vessel.timeline.map((item, idx) => (
+                {(liveTimeline || vessel.timeline) && (liveTimeline || vessel.timeline)!.length > 0 ? (
+                  (liveTimeline || vessel.timeline)!.map((item, idx) => (
                     <div
                       key={item.id || idx}
                       className="p-3 rounded-xl bg-slate-50/90 border border-slate-200 hover:border-cyan-400/40 transition text-xs relative pl-8 shadow-xs"

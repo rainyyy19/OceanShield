@@ -2,9 +2,25 @@
 
 import React, { useState, useEffect } from "react";
 import { Terminal, Download, Play, Pause, RefreshCw, CheckCircle2, ShieldAlert } from "lucide-react";
+import { getAisStatus } from "@/lib/api";
+import { AisStatusResponse } from "@/types/vessel";
 
 export default function LogsView() {
   const [isStreaming, setIsStreaming] = useState(true);
+  const [aisStatus, setAisStatus] = useState<AisStatusResponse | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    const fetchStatus = async () => {
+      const s = await getAisStatus();
+      if (isMounted && s) setAisStatus(s);
+    };
+    fetchStatus();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const [logEntries, setLogEntries] = useState([
     { id: 1, time: "14:42:01.218", type: "!AIVDM", channel: "A", mmsi: 352984123, raw: "!AIVDM,1,1,,A,15N8i`001jP006R7?mF`0?wN0812,0*26", decode: "MSG 1: EVER VALIANT, Pos: 12.7145N 43.4512E, SOG: 18.4kts, COG: 322 deg, ROT: 0, NavStatus: 0" },
     { id: 2, time: "14:42:02.842", type: "ANOMALY", channel: "SYS", mmsi: 352984123, raw: "NEURAL_ERR: KINEMATICS_DISCONTINUITY_SPIKE delta=18.4nm conf=96.4%", decode: "TRIGGER: Coordinate jump violates maximum vessel kinematic speed envelope (540 kts implied)" },
@@ -37,7 +53,9 @@ export default function LogsView() {
                 RAW TELEMETRY & NMEA SENSOR STREAM
               </span>
               <span className="text-xs font-mono text-emerald-700 font-bold">
-                RATE: 28,400 MSG/SEC
+                {aisStatus
+                  ? `SOURCE: ${aisStatus.last_source} (${aisStatus.total_records_ingested} RECORDS)`
+                  : "RATE: 28,400 MSG/SEC"}
               </span>
             </div>
             <h2 className="text-2xl font-black text-slate-900 tracking-tight">

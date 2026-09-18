@@ -14,6 +14,7 @@ import {
   SlidersHorizontal 
 } from "lucide-react";
 import { Vessel } from "@/types/vessel";
+import { getHeatmapRegions } from "@/lib/api";
 
 interface ChokepointsViewProps {
   vessels: Vessel[];
@@ -27,6 +28,17 @@ export default function ChokepointsView({
   onNavigateToFleet,
 }: ChokepointsViewProps) {
   const [selectedZone, setSelectedZone] = useState<string>("bab-el-mandeb");
+  const [liveRegions, setLiveRegions] = useState<any[]>([]);
+
+  React.useEffect(() => {
+    const fetchRegions = async () => {
+      const data = await getHeatmapRegions();
+      if (data?.regions && data.regions.length > 0) {
+        setLiveRegions(data.regions);
+      }
+    };
+    fetchRegions();
+  }, []);
 
   const chokepoints = [
     {
@@ -121,7 +133,22 @@ export default function ChokepointsView({
     },
   ];
 
-  const activeZoneData = chokepoints.find((c) => c.id === selectedZone) || chokepoints[0];
+  const mergedChokepoints = chokepoints.map((choke) => {
+    const liveMatch = liveRegions.find(
+      (r) => r.id === choke.id || r.name?.toLowerCase().includes(choke.id.replace("-", " "))
+    );
+    if (liveMatch) {
+      return {
+        ...choke,
+        riskScore: Math.round(liveMatch.riskScore || liveMatch.risk_score || choke.riskScore),
+        vesselsInZone: liveMatch.vesselCount || liveMatch.vessel_count || choke.vesselsInZone,
+        activeThreats: liveMatch.primaryThreat || liveMatch.primary_threat || choke.activeThreats,
+      };
+    }
+    return choke;
+  });
+
+  const activeZoneData = mergedChokepoints.find((c) => c.id === selectedZone) || mergedChokepoints[0];
 
   const handleInspectOnMap = (choke: typeof chokepoints[0]) => {
     onFlyToCorridor(choke.lat, choke.lng, choke.zoom);
@@ -167,7 +194,7 @@ export default function ChokepointsView({
           <span className="text-xs font-mono uppercase tracking-wider text-slate-500 font-bold block">
             Select Chokepoint Zone
           </span>
-          {chokepoints.map((choke) => {
+          {mergedChokepoints.map((choke) => {
             const isSelected = selectedZone === choke.id;
             return (
               <div

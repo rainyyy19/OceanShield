@@ -18,6 +18,7 @@ import {
   Sparkles
 } from "lucide-react";
 import { Vessel } from "@/types/vessel";
+import { getBackendHealth } from "@/lib/api";
 
 interface NavbarProps {
   vessels: Vessel[];
@@ -29,6 +30,24 @@ export default function Navbar({ vessels, onSelectVessel }: NavbarProps) {
   const [currentTime, setCurrentTime] = useState<string>("");
   const [searchQuery, setSearchQuery] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isBackendConnected, setIsBackendConnected] = useState<boolean>(true);
+
+  // Poll backend health status
+  useEffect(() => {
+    let isMounted = true;
+    const checkHealth = async () => {
+      const h = await getBackendHealth();
+      if (isMounted) {
+        setIsBackendConnected(h?.status === "healthy" || (h as any)?.backend_connected === true);
+      }
+    };
+    checkHealth();
+    const interval = setInterval(checkHealth, 15000);
+    return () => {
+      isMounted = false;
+      clearInterval(interval);
+    };
+  }, []);
 
   // Live UTC Clock
   useEffect(() => {
@@ -69,10 +88,17 @@ export default function Navbar({ vessels, onSelectVessel }: NavbarProps) {
                   AI
                 </span>
               </h1>
-              <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-full">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                LIVE C2 FEED
-              </span>
+              {isBackendConnected ? (
+                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-700 bg-emerald-50 border border-emerald-300 px-2 py-0.5 rounded-full">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  LIVE C2 FEED
+                </span>
+              ) : (
+                <span className="hidden sm:inline-flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wider text-amber-700 bg-amber-50 border border-amber-300 px-2 py-0.5 rounded-full" title="Running in standalone mode with local AIS telemetry">
+                  <span className="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+                  STANDALONE MODE
+                </span>
+              )}
             </div>
             <p className="text-[10px] font-mono text-slate-500 tracking-wider font-semibold">
               MARITIME CYBER DEFENSE &bull; ARCTIC GNSS/AIS ANOMALY LAB

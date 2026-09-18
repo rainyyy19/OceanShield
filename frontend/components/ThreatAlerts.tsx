@@ -16,6 +16,7 @@ import {
   Zap
 } from "lucide-react";
 import { Vessel, ThreatAlert } from "@/types/vessel";
+import { getAnomalies } from "@/lib/api";
 
 interface ThreatAlertsProps {
   vessels: Vessel[];
@@ -30,6 +31,7 @@ export default function ThreatAlerts({
 }: ThreatAlertsProps) {
   const [selectedSeverity, setSelectedSeverity] = useState<string>("ALL");
   const [soundEnabled, setSoundEnabled] = useState(false);
+  const [liveAlerts, setLiveAlerts] = useState<ThreatAlert[]>([]);
 
   // Synthesize alerts from high/medium risk vessels + known attacks
   const rawAlerts: ThreatAlert[] = [
@@ -126,7 +128,19 @@ export default function ThreatAlerts({
     },
   ];
 
-  const filteredAlerts = rawAlerts.filter((alert) => {
+  React.useEffect(() => {
+    const fetchLive = async () => {
+      const res = await getAnomalies();
+      if (res && res.anomalies && res.anomalies.length > 0) {
+        setLiveAlerts(res.anomalies);
+      }
+    };
+    fetchLive();
+  }, []);
+
+  const activeAlerts = liveAlerts.length > 0 ? liveAlerts : rawAlerts;
+
+  const filteredAlerts = activeAlerts.filter((alert) => {
     if (selectedSeverity === "ALL") return true;
     return alert.severity === selectedSeverity;
   });

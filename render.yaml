@@ -1,0 +1,31 @@
+services:
+  # 1. FastAPI Threat Intelligence Backend
+  - type: web
+    name: oceanshield-backend
+    runtime: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r backend/requirements.txt
+    startCommand: uvicorn backend.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: PYTHONUNBUFFERED
+        value: "1"
+
+  # 2. Next.js 15 C2 Operations Cockpit
+  - type: web
+    name: oceanshield-frontend
+    runtime: node
+    region: oregon
+    plan: free
+    buildCommand: cd frontend && npm install && npm run build
+    startCommand: cd frontend && npm run start
+    envVars:
+      - key: NODE_VERSION
+        value: 20.18.0
+      - key: NEXT_PUBLIC_BACKEND_URL
+        fromService:
+          type: web
+          name: oceanshield-backend
+          property: host

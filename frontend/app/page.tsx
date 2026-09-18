@@ -17,7 +17,8 @@ import SatelliteView from "@/components/views/SatelliteView";
 import RulesView from "@/components/views/RulesView";
 import LogsView from "@/components/views/LogsView";
 import vesselsData from "@/data/vessels.json";
-import { Vessel, RiskLevel } from "@/types/vessel";
+import { Vessel, RiskLevel, FleetOverviewStats } from "@/types/vessel";
+import { getFleetStats, reloadAisTelemetry } from "@/lib/api";
 
 // Dynamic client-only import for Leaflet map component
 const FleetMap = dynamic(() => import("@/components/FleetMap"), {
@@ -36,30 +37,44 @@ const FleetMap = dynamic(() => import("@/components/FleetMap"), {
 
 export default function Home() {
   const [vessels, setVessels] = useState<Vessel[]>(vesselsData as Vessel[]);
+  const [stats, setStats] = useState<FleetOverviewStats | null>(null);
   const [selectedVessel, setSelectedVessel] = useState<Vessel | null>(null);
   const [drawerVessel, setDrawerVessel] = useState<Vessel | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<string>("fleet");
   const [activeRiskFilter, setActiveRiskFilter] = useState<RiskLevel | "All">("All");
 
-  // Fetch live vessels from AIS Backend API (CSV dataset)
-  React.useEffect(() => {
-    const fetchVessels = async () => {
-      try {
-        const res = await fetch("/api/vessels");
-        if (res.ok) {
-          const data = await res.json();
-          const list = Array.isArray(data) ? data : data.vessels || [];
-          if (list.length > 0) {
-            setVessels(list);
-          }
+  const fetchVessels = React.useCallback(async () => {
+    try {
+      const res = await fetch("/api/vessels");
+      if (res.ok) {
+        const data = await res.json();
+        const list = Array.isArray(data) ? data : data.vessels || [];
+        if (list.length > 0) {
+          setVessels(list);
         }
-      } catch (err) {
-        console.warn("Could not fetch vessels from /api/vessels, using fallback:", err);
       }
-    };
-    fetchVessels();
+    } catch (err) {
+      console.warn("Could not fetch vessels from /api/vessels, using fallback:", err);
+    }
   }, []);
+
+  const fetchStats = React.useCallback(async () => {
+    try {
+      const s = await getFleetStats();
+      if (s) {
+        setStats(s);
+      }
+    } catch (err) {
+      console.warn("Could not fetch fleet stats, using fallback:", err);
+    }
+  }, []);
+
+  // Fetch live vessels and stats from AIS Backend API
+  React.useEffect(() => {
+    fetchVessels();
+    fetchStats();
+  }, [fetchVessels, fetchStats]);
 
   const highRiskCount = vessels.filter((v) => v.risk === "High").length;
 
@@ -125,8 +140,14 @@ export default function Home() {
     downloadAnchor.remove();
   };
 
-  const handleRefresh = () => {
-    setVessels([...(vesselsData as Vessel[])]);
+  const handleRefresh = async () => {
+    try {
+      await reloadAisTelemetry();
+    } catch (e) {
+      console.warn("Backend reload failed, reloading local state:", e);
+    }
+    await fetchVessels();
+    await fetchStats();
   };
 
   return (
@@ -162,10 +183,10 @@ export default function Home() {
 
               {/* 3. Four Statistic Cards */}
               <StatCards
-                totalShipsCount={vessels.length}
-                activeThreatsCount={highRiskCount + 1}
-                fleetRiskScore={78}
-                incidentsTodayCount={14}
+                totalShipsCount={stats ? stats.total_ships_count : vessels.length}
+                activeThreatsCount={stats ? stats.active_threats_count : highRiskCount + 1}
+                fleetRiskScore={stats ? Math.round(stats.fleet_risk_score) : 78}
+                incidentsTodayCount={stats ? stats.incidents_today_count : 14}
                 onCardClick={(type) => {
                   if (type === "active-threats") {
                     setActiveRiskFilter("High");

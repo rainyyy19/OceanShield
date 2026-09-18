@@ -81,41 +81,107 @@ OceanShield/
 
 ---
 
-## 🚦 Getting Started
+## 🚦 Getting Started (Full-Stack)
 
 ### 1. Prerequisites
-* **Node.js** (v18.18+ or v20+)
-* **npm** or **pnpm** / **yarn**
+* **Node.js** (v18.18+ or v20+) & **npm**
+* **Python** (v3.10+) & **pip**
 
 ### 2. Installation
 ```bash
+# Clone repository
 git clone https://github.com/rainyyy19/OceanShield.git
 cd OceanShield
+
+# Install frontend dependencies
 npm install
+
+# Install backend dependencies
+cd backend
+pip install -r requirements.txt
+cd ..
 ```
 
-### 3. Development Server
+### 3. Running Both Backend & Frontend
+
+#### Option A: Unified Concurrent Launcher (Recommended)
 ```bash
 npm run dev
 ```
-Open [http://localhost:3000](http://localhost:3000) (or specified port) in your browser.
+This concurrently spins up:
+- 🚀 **FastAPI Backend**: `http://127.0.0.1:8000` (Interactive docs: `http://127.0.0.1:8000/docs`)
+- 🌐 **Next.js Frontend**: `http://localhost:3000`
 
-### 4. Production Build
+#### Option B: Windows One-Click Launcher
+Double-click or run:
+```cmd
+start.bat
+# or in PowerShell
+.\start.ps1
+```
+
+#### Option C: Separate Terminals
 ```bash
-npm run build
-npm run start
+# Terminal 1: Backend
+cd backend
+python -m uvicorn main:app --host 127.0.0.1 --port 8000 --reload
+
+# Terminal 2: Frontend
+npm run dev:frontend
+```
+
+### 4. Running Backend Automated Tests
+```bash
+npm run test:backend
+# or: cd backend && pytest
 ```
 
 ---
 
-## 📡 API Reference
+## 📡 Complete REST API Reference (FastAPI Backend & Next.js Gateway)
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
-| `GET` | `/api/vessels` | List all monitored vessels with latest telemetry and risk classification. |
-| `GET` | `/api/vessels/{mmsi}/track` | Retrieve chronological coordinates, original AIS path, and spoofed trajectory. |
+| `GET` | `/api/vessels` | List all monitored vessels with filters (`risk`, `search`, `limit`, `offset`). |
+| `GET` | `/api/vessels/{id}` | Retrieve individual vessel profile by ID or MMSI. |
+| `GET` | `/api/vessels/{mmsi}/track` | Chronological track coordinates, original AIS path, and spoofed trajectory. |
+| `GET` | `/api/stats` | Executive fleet dashboard metrics (total ships, active threats, risk index). |
+| `GET` | `/api/anomalies` | Maritime threat alerts feed with severity & confidence filters. |
+| `GET` | `/api/spoofing/confidence` | Fleet-wide spoofing confidence distributions & top threatened vessels. |
+| `GET` | `/api/spoofing/confidence/{id}` | Granular 6-factor electronic warfare confidence score breakdown for a vessel. |
+| `GET` | `/api/investigations/timeline` | Fleet-wide chronological forensic investigation event audit trail. |
+| `GET` | `/api/investigations/timeline/{id}`| Vessel-specific chronological forensic incident sequence. |
+| `GET` | `/api/heatmap/regions` | Strategic chokepoints (Bab-el-Mandeb, Hormuz, Malacca, etc.) & risk bounds. |
+| `GET` | `/api/heatmap/points` | Weighted coordinate intensity points for tactical heatmaps. |
+| `POST`| `/api/ais/reload` | Re-sync and reload baseline AIS CSV telemetry across the platform. |
+| `GET` | `/api/ais/status` | Real-time AIS telemetry ingestion status & total records tracked. |
+| `GET` | `/api/health` | Comprehensive full-stack backend & sensor health check. |
+
+---
+
+## 🚀 Production Deployment
+
+OceanShield AI supports multi-target production deployments out of the box. Complete instructions are documented in [**`DEPLOYMENT.md`**](file:///c:/Users/rainy/Documents/antigravity/charming-brahmagupta/DEPLOYMENT.md).
+
+### Quickstart: Docker & Docker Compose
+```bash
+# 1-click build & launch (runs FastAPI on :8000 and Next.js standalone on :3000)
+docker compose up --build -d
+
+# Windows 1-click launcher
+deploy.bat
+
+# Linux/macOS 1-click launcher
+./deploy.sh
+```
+
+### Cloud PaaS (Zero-Config)
+* **Render.com**: Connect the repository and click **Apply** using [`render.yaml`](file:///c:/Users/rainy/Documents/antigravity/charming-brahmagupta/render.yaml).
+* **Railway.app**: Deploy with [`railway.json`](file:///c:/Users/rainy/Documents/antigravity/charming-brahmagupta/railway.json).
+* **Vercel**: Deploy frontend with [`vercel.json`](file:///c:/Users/rainy/Documents/antigravity/charming-brahmagupta/vercel.json).
 
 ---
 
 ## 📄 License
 MIT License. Commercial maritime cybersecurity and GNSS threat intelligence research.
+
